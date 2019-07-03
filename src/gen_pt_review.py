@@ -20,6 +20,7 @@ import random
 import argparse
 from pytorch_pretrained_bert import tokenization
 import numpy as np
+import time
 
 import modelconfig
 
@@ -114,6 +115,8 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
                               dupe_factor, short_seq_prob, masked_lm_prob,
                               max_predictions_per_seq, rng):
     """Create `TrainingInstance`s from raw text."""
+    import tarfile
+
     all_documents = [[]]
 
     # Input file format:
@@ -123,6 +126,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
     # (2) Blank lines between documents. Document boundaries are needed so
     # that the "next sentence prediction" task doesn't span between documents.
 
+    logger.info("reading docs %s" % input_files)
     with open(input_files, "r") as reader:
         while True:
             line = reader.readline()
@@ -137,18 +141,26 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
             if tokens:
                 all_documents[-1].append(tokens)
 
+    logger.info("docs read %s" % len(all_documents))
+
     # Remove empty documents
     all_documents = [x for x in all_documents if x]
     rng.shuffle(all_documents)
 
     vocab_words = list(tokenizer.vocab.keys())
     instances = []
+    tm0 = time.time()
+    tm1 = tm0 + 60.0
     for _ in range(dupe_factor):
         for document_index in range(len(all_documents)):
             instances.extend(
                 create_instances_from_document(
                     all_documents, document_index, max_seq_length, short_seq_prob,
                     masked_lm_prob, max_predictions_per_seq, vocab_words, rng))
+            tm2 = time.time()
+            if tm2 >= tm1:
+                logger.info("convert in progress doc_index={} time={:.2f}".format(document_index, tm2-tm0))
+                tm1 = tm2 + 60.0
 
     rng.shuffle(instances)
     return instances
@@ -401,6 +413,9 @@ def main():
     np.random.seed(args.random_seed)
     
     tokenizer = tokenization.BertTokenizer.from_pretrained(modelconfig.MODEL_ARCHIVE_MAP[args.bert_model]) 
+    if tokenizer is None:
+        logger.info("load BERT base model failed %s" % modelconfig.MODEL_ARCHIVE_MAP[args.bert_model])
+        return
     rng = random.Random(args.random_seed)
     
     instances = create_training_instances(

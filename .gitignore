@@ -1,0 +1,5 @@
+*.pyc
+__pycache__
+/.vscode/
+/pt_model/
+/domain_corpus/
