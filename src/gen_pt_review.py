@@ -115,7 +115,7 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
                               dupe_factor, short_seq_prob, masked_lm_prob,
                               max_predictions_per_seq, rng):
     """Create `TrainingInstance`s from raw text."""
-    import tarfile
+    import gzip
 
     all_documents = [[]]
 
@@ -127,7 +127,11 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
     # that the "next sentence prediction" task doesn't span between documents.
 
     logger.info("reading docs %s" % input_files)
-    with open(input_files, "r") as reader:
+    f1, m1 = (gzip.open, "rt") if input_files.endswith(".gz") else (open, "r")
+    #
+    tm0 = time.time()
+    tm1 = tm0 + 60.0
+    with f1(input_files, m1) as reader:
         while True:
             line = reader.readline()
             if not line:
@@ -140,6 +144,10 @@ def create_training_instances(input_files, tokenizer, max_seq_length,
             tokens = tokenizer.tokenize(line)
             if tokens:
                 all_documents[-1].append(tokens)
+            tm2 = time.time()
+            if tm2 >= tm1:
+                logger.info("read/tokenize in progress lineno={} time={:.2f}".format(len(all_documents), tm2-tm0))
+                tm1 = tm2 + 60.0
 
     logger.info("docs read %s" % len(all_documents))
 

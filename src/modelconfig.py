@@ -26,4 +26,6 @@ MODEL_ARCHIVE_MAP = {
     
     'laptop_pt': '../pt_model/laptop_pt/',
     'rest_pt': '../pt_model/rest_pt/',  
+    
+    'my_domain_pt': '../pt_model/my_domain_pt/',  
 }

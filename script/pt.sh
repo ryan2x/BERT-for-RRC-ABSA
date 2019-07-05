@@ -50,7 +50,7 @@ python ../src/run_pt.py \
     --do_train \
     --num_train_steps=$steps \
     --gradient_accumulation_steps=2 \
-    --fp16 --loss_scale 2 \
+    --loss_scale 2 \
     --save_checkpoints_steps 10000 > $OUT_DIR/train.log 2>&1
 
 cp ../pt_model/$BERT/vocab.txt ./$OUT_DIR
