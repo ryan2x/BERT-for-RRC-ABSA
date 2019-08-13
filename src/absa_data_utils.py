@@ -30,10 +30,13 @@ class ABSATokenizer(BertTokenizer):
             sub_tokens=self.wordpiece_tokenizer.tokenize(token)
             for jx, sub_token in enumerate(sub_tokens):
                 split_tokens.append(sub_token)
-                if labels[ix]=="B" and jx>0:
-                    split_labels.append("I")
+                if labels is None:
+                    split_labels.append("O")
                 else:
-                    split_labels.append(labels[ix])
+                    if labels[ix]=="B" and jx>0:
+                        split_labels.append("I")
+                    else:
+                        split_labels.append(labels[ix])
                 idx_map.append(ix)
         return split_tokens, split_labels, idx_map
 
@@ -122,7 +125,7 @@ class AeProcessor(DataProcessor):
         for (i, ids) in enumerate(lines):
             guid = "%s-%s" % (set_type, ids )
             text_a = lines[ids]['sentence']
-            label = lines[ids]['label']
+            label = lines[ids].get('label')
             examples.append(
                 InputExample(guid=guid, text_a=text_a, label=label) )
         return examples        
