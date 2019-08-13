@@ -1,5 +1,8 @@
 *.pyc
 __pycache__
 /.vscode/
+/.idea/
 /pt_model/
 /domain_corpus/
+/run/
+/ae

@@ -28,6 +28,7 @@ from pytorch_pretrained_bert.tokenization import BertTokenizer
 from pytorch_pretrained_bert.modeling import PreTrainedBertModel, BertModel
 from pytorch_pretrained_bert.optimization import BertAdam
 
+from absa_models import BertForSequenceLabeling
 import absa_data_utils as data_utils
 from absa_data_utils import ABSATokenizer
 import modelconfig
@@ -42,27 +43,6 @@ def warmup_linear(x, warmup=0.002):
         return x/warmup
     return 1.0 - x
 
-
-class BertForSequenceLabeling(PreTrainedBertModel):
-    def __init__(self, config, num_labels=3):
-        super(BertForSequenceLabeling, self).__init__(config)
-        self.num_labels = num_labels
-        self.bert = BertModel(config)
-        self.dropout = torch.nn.Dropout(config.hidden_dropout_prob)
-        self.classifier = torch.nn.Linear(config.hidden_size, num_labels)
-        self.apply(self.init_bert_weights)
-
-    def forward(self, input_ids, token_type_ids=None, attention_mask=None, labels=None):
-        sequence_output, _ = self.bert(input_ids, token_type_ids, attention_mask, output_all_encoded_layers=False)
-        sequence_output = self.dropout(sequence_output)
-        logits = self.classifier(sequence_output)
-
-        if labels is not None:
-            loss_fct = torch.nn.CrossEntropyLoss(ignore_index=-1)
-            loss = loss_fct(logits.view(-1, self.num_labels), labels.view(-1))
-            return loss
-        else:
-            return logits
 
 def train(args):
     processor = data_utils.AeProcessor()
@@ -187,14 +167,20 @@ def test(args):  # Load a trained model that you have fine-tuned (we assume eval
     eval_sampler = SequentialSampler(eval_data)
     eval_dataloader = DataLoader(eval_data, sampler=eval_sampler, batch_size=args.eval_batch_size)
 
-    model = torch.load(os.path.join(args.output_dir, "model.pt") )
-    model.cuda()
+    if torch.cuda.is_available():
+        model = torch.load(os.path.join(args.output_dir, "model.pt") )
+        model.cuda()
+    else:
+        model = torch.load(os.path.join(args.output_dir, "model.pt"), map_location='cpu')
     model.eval()
     
     full_logits=[]
     full_label_ids=[]
     for step, batch in enumerate(eval_dataloader):
-        batch = tuple(t.cuda() for t in batch)
+        if torch.cuda.is_available():
+            batch = tuple(t.cuda() for t in batch)
+        else:
+            batch = tuple(t for t in batch)
         input_ids, segment_ids, input_mask, label_ids = batch
         
         with torch.no_grad():

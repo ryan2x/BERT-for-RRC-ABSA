@@ -37,6 +37,7 @@ do
             --output_dir $OUTPUT_DIR --data_dir $DATA_DIR --seed $run > $OUTPUT_DIR/test_log.txt 2>&1
     fi
     if [ -e $OUTPUT_DIR/"predictions.json" ] && [ -e $OUTPUT_DIR/model.pt ] ; then
-        rm $OUTPUT_DIR/model.pt
+        # keep fine-tuned model
+        # rm $OUTPUT_DIR/model.pt
     fi
 done

@@ -70,6 +70,8 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
     masked_lm_weights_np = np.zeros((len(instances), max_seq_length), np.int16)
     next_sentence_labels_np = np.zeros((len(instances), ), np.int16)
     
+    tm0 = time.time()
+    tm1 = tm0 + 60.0
     for (inst_index, instance) in enumerate(instances):
         input_ids = tokenizer.convert_tokens_to_ids(instance.tokens)
         segment_ids = list(instance.segment_ids)
@@ -107,8 +109,15 @@ def write_instance_to_example_files(instances, tokenizer, max_seq_length,
         if inst_index < 5:
             logging.info("*** Example ***")
             logging.info("tokens: %s" % " ".join([x for x in instance.tokens]))
-        
+
+        tm2 = time.time()
+        if tm2 >= tm1:
+            logger.info("convert_tokens_to_ids in progress inst_index={} time={:.2f}".format(inst_index, tm2-tm0))
+            tm1 = tm2 + 60.0
+
+    logging.info("*** Saving numpy file begins")
     np.savez_compressed(output_files, input_ids=input_ids_np, input_mask = input_mask_np, segment_ids = segment_ids_np, masked_lm_ids = masked_lm_ids_np, masked_lm_weights = masked_lm_weights_np, next_sentence_labels = next_sentence_labels_np)
+    logging.info("*** Saving numpy file finishes")
 
 
 def create_training_instances(input_files, tokenizer, max_seq_length,
